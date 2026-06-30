@@ -12,22 +12,60 @@ import {
   Schema,
   Row,
 } from "@once-ui-system/core";
-import { baseURL, about, person, social } from "@/resources";
+import { baseURL, about as defaultAbout, person as defaultPerson, social } from "@/resources";
 import TableOfContents from "@/components/about/TableOfContents";
 import styles from "@/components/about/about.module.scss";
 import React from "react";
 
+import { client } from "@/sanity/lib/client";
+import { aboutQuery, personQuery } from "@/sanity/lib/queries";
+
+export const revalidate = 0; // Disable caching to show Sanity updates immediately
+
 export async function generateMetadata() {
+  const sanityAbout = await client.fetch(aboutQuery).catch(() => null);
+  const title = sanityAbout?.title || defaultAbout.title;
+  const description = sanityAbout?.description || defaultAbout.description;
+
   return Meta.generate({
-    title: about.title,
-    description: about.description,
+    title,
+    description,
     baseURL: baseURL,
-    image: `/api/og/generate?title=${encodeURIComponent(about.title)}`,
-    path: about.path,
+    image: `/api/og/generate?title=${encodeURIComponent(title)}`,
+    path: defaultAbout.path,
   });
 }
 
-export default function About() {
+export default async function About() {
+  const sanityAbout = await client.fetch(aboutQuery).catch(() => null);
+  const sanityPerson = await client.fetch(personQuery).catch(() => null);
+
+  const about = {
+    ...defaultAbout,
+    title: sanityAbout?.title || defaultAbout.title,
+    description: sanityAbout?.description || defaultAbout.description,
+    intro: {
+      ...defaultAbout.intro,
+      title: sanityAbout?.introTitle || defaultAbout.intro.title,
+      description: sanityAbout?.introDescription || defaultAbout.intro.description,
+    },
+    work: {
+      ...defaultAbout.work,
+      experiences: sanityAbout?.workExperiences || defaultAbout.work.experiences,
+    },
+    studies: {
+      ...defaultAbout.studies,
+      institutions: sanityAbout?.studies || defaultAbout.studies.institutions,
+    },
+  };
+
+  const person = {
+    ...defaultPerson,
+    name: sanityPerson?.name || defaultPerson.name,
+    role: sanityPerson?.role || defaultPerson.role,
+    location: sanityPerson?.location || defaultPerson.location,
+    languages: sanityPerson?.languages || defaultPerson.languages,
+  };
   const structure = [
     {
       title: about.intro.title,
@@ -37,17 +75,17 @@ export default function About() {
     {
       title: about.work.title,
       display: about.work.display,
-      items: about.work.experiences.map((experience) => experience.company),
+      items: about.work.experiences.map((experience: any) => experience.company),
     },
     {
       title: about.studies.title,
       display: about.studies.display,
-      items: about.studies.institutions.map((institution) => institution.name),
+      items: about.studies.institutions.map((institution: any) => institution.name),
     },
     {
       title: about.technical.title,
       display: about.technical.display,
-      items: about.technical.skills.map((skill) => skill.title),
+      items: about.technical.skills.map((skill: any) => skill.title),
     },
   ];
   return (
@@ -100,7 +138,7 @@ export default function About() {
             </Row>
             {person.languages && person.languages.length > 0 && (
               <Row wrap gap="8">
-                {person.languages.map((language, index) => (
+                {person.languages.map((language: any, index: number) => (
                   <Tag key={index} size="l">
                     {language}
                   </Tag>
@@ -197,7 +235,7 @@ export default function About() {
           </Column>
 
           {about.intro.display && (
-            <Column textVariant="body-default-l" fillWidth gap="m" marginBottom="xl">
+            <Column className={styles.textAlign} textVariant="body-default-l" fillWidth gap="m" marginBottom="xl">
               {about.intro.description}
             </Column>
           )}
@@ -208,9 +246,9 @@ export default function About() {
                 {about.work.title}
               </Heading>
               <Column fillWidth gap="l" marginBottom="40">
-                {about.work.experiences.map((experience, index) => (
+                {about.work.experiences.map((experience: any, index: number) => (
                   <Column key={`${experience.company}-${experience.role}-${index}`} fillWidth>
-                    <Row fillWidth horizontal="between" vertical="end" marginBottom="4">
+                    <Row fillWidth horizontal="between" vertical="end" marginBottom="4" s={{ direction: "column", horizontal: "start", gap: "4" }}>
                       <Text id={experience.company} variant="heading-strong-l">
                         {experience.company}
                       </Text>
@@ -222,7 +260,7 @@ export default function About() {
                       {experience.role}
                     </Text>
                     <Column as="ul" gap="16">
-                      {experience.achievements.map(
+                      {experience.achievements && experience.achievements.length > 0 && experience.achievements.map(
                         (achievement: React.ReactNode, index: number) => (
                           <Text
                             as="li"
@@ -236,7 +274,7 @@ export default function About() {
                     </Column>
                     {experience.images && experience.images.length > 0 && (
                       <Row fillWidth paddingTop="m" paddingLeft="40" gap="12" wrap>
-                        {experience.images.map((image, index) => (
+                        {experience.images.map((image: any, index: number) => (
                           <Row
                             key={index}
                             border="neutral-medium"
@@ -267,7 +305,7 @@ export default function About() {
                 {about.studies.title}
               </Heading>
               <Column fillWidth gap="l" marginBottom="40">
-                {about.studies.institutions.map((institution, index) => (
+                {about.studies.institutions.map((institution: any, index: number) => (
                   <Column key={`${institution.name}-${index}`} fillWidth gap="4">
                     <Text id={institution.name} variant="heading-strong-l">
                       {institution.name}
@@ -292,7 +330,7 @@ export default function About() {
                 {about.technical.title}
               </Heading>
               <Column fillWidth gap="l">
-                {about.technical.skills.map((skill, index) => (
+                {about.technical.skills.map((skill: any, index: number) => (
                   <Column key={`${skill}-${index}`} fillWidth gap="4">
                     <Text id={skill.title} variant="heading-strong-l">
                       {skill.title}
@@ -302,7 +340,7 @@ export default function About() {
                     </Text>
                     {skill.tags && skill.tags.length > 0 && (
                       <Row wrap gap="8" paddingTop="8">
-                        {skill.tags.map((tag, tagIndex) => (
+                        {skill.tags.map((tag: any, tagIndex: number) => (
                           <Tag key={`${skill.title}-${tagIndex}`} size="l" prefixIcon={tag.icon}>
                             {tag.name}
                           </Tag>
@@ -311,7 +349,7 @@ export default function About() {
                     )}
                     {skill.images && skill.images.length > 0 && (
                       <Row fillWidth paddingTop="m" gap="12" wrap>
-                        {skill.images.map((image, index) => (
+                        {skill.images.map((image: any, index: number) => (
                           <Row
                             key={index}
                             border="neutral-medium"

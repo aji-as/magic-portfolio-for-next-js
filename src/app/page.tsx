@@ -16,35 +16,72 @@ import { Mailchimp } from "@/components";
 import { Projects } from "@/components/work/Projects";
 import { Posts } from "@/components/blog/Posts";
 
+import { client } from "@/sanity/lib/client";
+import { homeQuery, personQuery, aboutQuery } from "@/sanity/lib/queries";
+
+export const revalidate = 0; // Disable caching to show Sanity updates immediately
+
 export async function generateMetadata() {
+  const sanityHome = await client.fetch(homeQuery).catch(() => null);
+  const title = sanityHome?.title || home.title;
+  const description = sanityHome?.description || home.description;
+
   return Meta.generate({
-    title: home.title,
-    description: home.description,
+    title,
+    description,
     baseURL: baseURL,
     path: home.path,
     image: home.image,
   });
 }
 
-export default function Home() {
+export default async function Home() {
+  const sanityHome = await client.fetch(homeQuery).catch(() => null);
+  const sanityPerson = await client.fetch(personQuery).catch(() => null);
+  const sanityAbout = await client.fetch(aboutQuery).catch(() => null);
+
+  const displayHome = {
+    ...home,
+    title: sanityHome?.title || home.title,
+    description: sanityHome?.description || home.description,
+    headline: sanityHome?.headline || home.headline,
+    subline: sanityHome?.subline || home.subline,
+    featured: {
+      ...home.featured,
+      display: sanityHome?.featuredDisplay ?? home.featured.display,
+      title: sanityHome?.featuredTitle || home.featured.title,
+      href: sanityHome?.featuredHref || home.featured.href,
+    }
+  };
+
+  const displayPerson = {
+    ...person,
+    name: sanityPerson?.name || person.name,
+  };
+
+  const displayAbout = {
+    ...about,
+    title: sanityAbout?.title || about.title,
+  };
+
   return (
     <Column maxWidth="m" gap="xl" paddingY="12" horizontal="center">
       <Schema
         as="webPage"
         baseURL={baseURL}
-        path={home.path}
-        title={home.title}
-        description={home.description}
-        image={`/api/og/generate?title=${encodeURIComponent(home.title)}`}
+        path={displayHome.path}
+        title={displayHome.title}
+        description={displayHome.description}
+        image={`/api/og/generate?title=${encodeURIComponent(displayHome.title)}`}
         author={{
-          name: person.name,
-          url: `${baseURL}${about.path}`,
-          image: `${baseURL}${person.avatar}`,
+          name: displayPerson.name,
+          url: `${baseURL}${displayAbout.path}`,
+          image: `${baseURL}${displayPerson.avatar}`,
         }}
       />
       <Column fillWidth horizontal="center" gap="m">
         <Column maxWidth="s" horizontal="center" align="center">
-          {home.featured.display && (
+          {displayHome.featured.display && (
             <RevealFx
               fillWidth
               horizontal="center"
@@ -59,42 +96,42 @@ export default function Home() {
                 onBackground="neutral-strong"
                 textVariant="label-default-s"
                 arrow={false}
-                href={home.featured.href}
+                href={displayHome.featured.href}
               >
-                <Row paddingY="2">{home.featured.title}</Row>
+                <Row paddingY="2">{displayHome.featured.title}</Row>
               </Badge>
             </RevealFx>
           )}
           <RevealFx translateY="4" fillWidth horizontal="center" paddingBottom="16">
             <Heading wrap="balance" variant="display-strong-l">
-              {home.headline}
+              {displayHome.headline}
             </Heading>
           </RevealFx>
           <RevealFx translateY="8" delay={0.2} fillWidth horizontal="center" paddingBottom="32">
             <Text wrap="balance" onBackground="neutral-weak" variant="heading-default-xl">
-              {home.subline}
+              {displayHome.subline}
             </Text>
           </RevealFx>
           <RevealFx paddingTop="12" delay={0.4} horizontal="center" paddingLeft="12">
             <Button
               id="about"
               data-border="rounded"
-              href={about.path}
+              href={displayAbout.path}
               variant="secondary"
               size="m"
               weight="default"
               arrowIcon
             >
               <Row gap="8" vertical="center" paddingRight="4">
-                {about.avatar.display && (
+                {displayAbout.avatar.display && (
                   <Avatar
                     marginRight="8"
                     style={{ marginLeft: "-0.75rem" }}
-                    src={person.avatar}
+                    src={displayPerson.avatar}
                     size="m"
                   />
                 )}
-                {about.title}
+                {displayAbout.title}
               </Row>
             </Button>
           </RevealFx>
