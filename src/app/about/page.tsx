@@ -19,11 +19,13 @@ import React from "react";
 
 import { client } from "@/sanity/lib/client";
 import { aboutQuery, personQuery } from "@/sanity/lib/queries";
+import { urlForImage } from "@/sanity/lib/image";
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0; // Disable caching to show Sanity updates immediately
 
 export async function generateMetadata() {
-  const sanityAbout = await client.fetch(aboutQuery).catch(() => null);
+  const sanityAbout = await client.fetch(aboutQuery, {}, { cache: 'no-store' }).catch(() => null);
   const title = sanityAbout?.title || defaultAbout.title;
   const description = sanityAbout?.description || defaultAbout.description;
 
@@ -37,8 +39,8 @@ export async function generateMetadata() {
 }
 
 export default async function About() {
-  const sanityAbout = await client.fetch(aboutQuery).catch(() => null);
-  const sanityPerson = await client.fetch(personQuery).catch(() => null);
+  const sanityAbout = await client.fetch(aboutQuery, {}, { cache: 'no-store' }).catch(() => null);
+  const sanityPerson = await client.fetch(personQuery, {}, { cache: 'no-store' }).catch(() => null);
 
   const about = {
     ...defaultAbout,
@@ -65,6 +67,7 @@ export default async function About() {
     role: sanityPerson?.role || defaultPerson.role,
     location: sanityPerson?.location || defaultPerson.location,
     languages: sanityPerson?.languages || defaultPerson.languages,
+    avatar: sanityPerson?.avatar ? urlForImage(sanityPerson.avatar).url() : defaultPerson.avatar,
   };
   const structure = [
     {

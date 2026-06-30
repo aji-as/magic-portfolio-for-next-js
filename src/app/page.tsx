@@ -18,11 +18,13 @@ import { Posts } from "@/components/blog/Posts";
 
 import { client } from "@/sanity/lib/client";
 import { homeQuery, personQuery, aboutQuery } from "@/sanity/lib/queries";
+import { urlForImage } from "@/sanity/lib/image";
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0; // Disable caching to show Sanity updates immediately
 
 export async function generateMetadata() {
-  const sanityHome = await client.fetch(homeQuery).catch(() => null);
+  const sanityHome = await client.fetch(homeQuery, {}, { cache: 'no-store' }).catch(() => null);
   const title = sanityHome?.title || home.title;
   const description = sanityHome?.description || home.description;
 
@@ -36,9 +38,9 @@ export async function generateMetadata() {
 }
 
 export default async function Home() {
-  const sanityHome = await client.fetch(homeQuery).catch(() => null);
-  const sanityPerson = await client.fetch(personQuery).catch(() => null);
-  const sanityAbout = await client.fetch(aboutQuery).catch(() => null);
+  const sanityHome = await client.fetch(homeQuery, {}, { cache: 'no-store' }).catch(() => null);
+  const sanityPerson = await client.fetch(personQuery, {}, { cache: 'no-store' }).catch(() => null);
+  const sanityAbout = await client.fetch(aboutQuery, {}, { cache: 'no-store' }).catch(() => null);
 
   const displayHome = {
     ...home,
@@ -57,6 +59,8 @@ export default async function Home() {
   const displayPerson = {
     ...person,
     name: sanityPerson?.name || person.name,
+    role: sanityPerson?.role || person.role,
+    avatar: sanityPerson?.avatar ? urlForImage(sanityPerson.avatar).url() : person.avatar,
   };
 
   const displayAbout = {
